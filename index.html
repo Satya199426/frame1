@@ -1,41 +1,325 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/CCapture.js/1.1.0/CCapture.all.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <title>Photo Frames Collage</title>
+    <style>
+       body {
+    font-family: Arial, sans-serif;
+    text-align: center; /* Keep text centered */
+    padding: 20px;
+    background-color: #f0f0f0;
+    display: flex; /* Use flexbox for alignment */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center items horizontally */
+    justify-content: center; /* Center items vertically */
+  
+    margin: 0; /* Reset default margin */
+}
+
+.text11 {
+    font-family: Cursive;
+    font-size: 25px;
+    font-weight: 700;
+    color: #F3D54E;
+    text-shadow: 1px 1px 1px #919191;
+    margin-bottom: 40px;
+}
+
+#collageContainer {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    margin: 0 auto; /* Center the container */
+    border: 2px dashed #ccc;
+    background: url('https://marketing.penair.org/hubfs/Bad%20Address/e00c091b-adfc-4784-9537-582f726d3d24_1.jpeg') no-repeat center center;
+    background-size: cover;
+}
+
+.controls {
+    margin: 10px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.upload-btn {
+    display: inline-block;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #44cda2;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.photo-frame {
+    position: absolute;
+    width: 62%;
+    height: 52%;
+    border: 3px solid white;
+    box-sizing: border-box;
+    overflow: hidden;
+     background-color: #44cda2;
+ 
+}
+
+.image-draggable {
+    position: absolute;
+    cursor: grab;
+    left: 50%; /* Center horizontally */
+    top: 50%; /* Center vertically */
+    transform: translate(-50%, -50%); /* Centering adjustment */
+    width: 140%; /* Scale as needed */
+    height: auto; /* Maintain aspect ratio */
+    transform-origin: center; /* Center the drag origin */
+}
+
+.image-draggable:active {
+    cursor: grabbing;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.11/dist/interact.min.js"></script>
 </head>
 <body>
-    <div style="background-color:white; width:500px; border:gold solid 2px; border-radius:9px;">
-        <h3 class="text-3d-gradient">Create Your Surprise Greeting!</h3>
-        <div class="controls-row">
-            <label for="uploadBtn" class="upload-btn">Upload Image</label>
-            <input type="file" class="upload-btn" id="uploadBtn" accept="image/*">
-            <button id="revealBtn" class="Reveal">Reveal Card</button>
-            <button id="downloadBtn" class="Download">Download Greeting</button>
-        </div>
-        <div class="controls-row" style="margin-top: 10px;">
-            <input type="text" id="customText" class="text1" placeholder="Enter your custom greeting">
-            <button id="updateTextBtn" class="update">Update Text</button>
-            <button id="clearBtn" class="clear-all-btn">Clear All</button>
-        </div>
-        <div id="greetingContainer">
-            <div id="cover">
-                <h2>Open to Reveal Your Surprise!</h2>
-            </div>
-            <img id="uploadedPhoto" src="" class="uploaded-image">
-            <div id="effects">
-                <!-- Firecracker blast effects will be dynamically created -->
-            </div>
-            <div id="happyBirthdayText">Happy Birthday!</div>
-        </div>
+    <span class="text11">Create Your Photo Collage</span>
+    
+    <div id="collageContainer">
+        <div id="frame1" class="photo-frame" style="bottom: 125px; left: 95px;"></div>
+     
     </div>
-   
+    
+    <div class="controls">
+        <button id="createCollageBtn">Create Collage</button>
+        <button id="downloadBtn" style="display: none;">Download Image</button>
+        <button id="clearAllBtn">Clear All</button>
+    </div>
+    
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+       const frame1 = document.getElementById('frame1');
+const downloadBtn = document.getElementById('downloadBtn');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const createCollageBtn = document.getElementById('createCollageBtn');
+const canvas = document.getElementById('canvas');
+
+const hiddenInput1 = document.createElement('input');
+hiddenInput1.type = 'file';
+hiddenInput1.accept = 'image/*';
+hiddenInput1.style.display = 'none';
+document.body.appendChild(hiddenInput1);
+
+frame1.addEventListener('click', () => hiddenInput1.click());
+
+// Add Draggable Image function with upload disable logic
+function addDraggableImage(frame, imgSrc, hiddenInput) {
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.classList.add('image-draggable');
+    frame.innerHTML = '';
+    frame.appendChild(img);
+
+    interact(img)
+        .draggable({
+            inertia: true,
+            modifiers: [
+                interact.modifiers.restrict({
+                    restriction: frame,
+                    endOnly: true,
+                }),
+            ],
+            listeners: {
+                move(event) {
+                    const target = event.target;
+                    const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                    const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+                    target.style.transform = `translate(${x}px, ${y}px)`;
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+                },
+            },
+        });
+
+    // Disable the upload option after image upload
+    hiddenInput.disabled = true;
+
+    // Add Delete button for the frame
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.innerHTML = 'X';
+    deleteBtn.onclick = () => {
+        frame.innerHTML = '';
+        hiddenInput.disabled = false; // Re-enable upload option after image is deleted
+        if (!frame1.querySelector('.image-draggable')) {
+            downloadBtn.style.display = 'none'; // Hide download button if no images present
+        }
+    };
+    frame.appendChild(deleteBtn);
+}
+
+// Hidden input event listener
+hiddenInput1.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            addDraggableImage(frame1, e.target.result, hiddenInput1);
+            downloadBtn.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Clear All functionality
+clearAllBtn.addEventListener('click', function() {
+    frame1.innerHTML = '';
+    hiddenInput1.disabled = false;
+    downloadBtn.style.display = 'none'; // Hide download button after clear all
+});
+
+createCollageBtn.addEventListener('click', function() {
+    downloadBtn.style.display = 'block'; // Show download button when collage is created
+});
+
+// Download function
+function downloadCollage() {
+    const context = canvas.getContext('2d');
+
+    // Increase the canvas resolution for higher quality
+    const scaleFactor = window.devicePixelRatio || 1;
+    const canvasWidth = collageContainer.offsetWidth * scaleFactor;
+    const canvasHeight = collageContainer.offsetHeight * scaleFactor;
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    
+    context.scale(scaleFactor, scaleFactor);  // Adjust for scaling
+
+    const backgroundImg = new Image();
+    backgroundImg.crossOrigin = 'anonymous';
+    backgroundImg.src = 'https://marketing.penair.org/hubfs/Bad%20Address/e00c091b-adfc-4784-9537-582f726d3d24_1.jpeg';
+
+    backgroundImg.onload = function() {
+        // Draw background image on canvas
+        context.drawImage(backgroundImg, 0, 0, canvas.width / scaleFactor, canvas.height / scaleFactor);
+
+        const imgPromises = [];
+
+        const img = frame1.querySelector('.image-draggable');
+        if (img) {
+            const imgElement = new Image();
+            imgElement.crossOrigin = 'anonymous';
+            imgElement.src = img.src;
+
+            imgPromises.push(new Promise(resolve => {
+                imgElement.onload = function() {
+                    const frameRect = frame1.getBoundingClientRect();
+                    const collageRect = collageContainer.getBoundingClientRect();
+                    const imgRect = img.getBoundingClientRect();
+
+                    const xOffset = frameRect.left - collageRect.left;
+                    const yOffset = frameRect.top - collageRect.top;
+
+                    const scaleX = imgRect.width / img.naturalWidth;
+                    const scaleY = imgRect.height / img.naturalHeight;
+
+                    const visibleWidth = Math.min(frameRect.width, imgRect.width);
+                    const visibleHeight = Math.min(frameRect.height, imgRect.height);
+
+                    const cropX = Math.max(0, (frameRect.left - imgRect.left) / scaleX);
+                    const cropY = Math.max(0, (frameRect.top - imgRect.top) / scaleY);
+                    const cropWidth = visibleWidth / scaleX;
+                    const cropHeight = visibleHeight / scaleY;
+
+                    // Save the current context state before applying rotation
+                    context.save();
+
+                    // Apply rotation based on the frame's transform CSS property
+                    const rotation = getRotationDegrees(frame1); // Function to get the rotation angle
+                    context.translate(xOffset + visibleWidth / 2, yOffset + visibleHeight / 2);
+                    context.rotate((rotation * Math.PI) / 180); // Rotate in radians
+                    context.translate(-(xOffset + visibleWidth / 2), -(yOffset + visibleHeight / 2));
+
+                    // Draw the image on the canvas with rotation
+                    context.drawImage(
+                        imgElement,
+                        cropX,
+                        cropY,
+                        cropWidth,
+                        cropHeight,
+                        xOffset,
+                        yOffset,
+                        visibleWidth,
+                        visibleHeight
+                    );
+
+                    // Add white frame border after rotation
+                    context.strokeStyle = 'white';
+                    context.lineWidth = 3; // Adjust the border thickness as needed
+                    context.strokeRect(xOffset, yOffset, visibleWidth, visibleHeight);
+
+                    // Restore the context to its original state after drawing
+                    context.restore();
+
+                    resolve();
+                };
+            }));
+        }
+
+        Promise.all(imgPromises).then(() => {
+            // Convert the canvas to an image and download it
+            const link = document.createElement('a');
+            link.download = 'collage.png';
+
+            // Export the canvas with high resolution
+            link.href = canvas.toDataURL('image/png', 1.0);  // Use 1.0 for best quality
+            link.click();
+        });
+    };
+}
+
+function getRotationDegrees(element) {
+    const transform = window.getComputedStyle(element).getPropertyValue('transform');
+    if (transform === 'none') return 0;
+
+    const matrix = transform.match(/matrix\((.+)\)/);
+    if (matrix) {
+        const values = matrix[1].split(', ');
+        const a = values[0];
+        const b = values[1];
+        const angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+        return angle;
+    }
+    return 0;
+}
+
+downloadBtn.addEventListener('click', downloadCollage);
 
 
-
-    <script src="satya.js"></script>
+    </script>
 </body>
 </html>
